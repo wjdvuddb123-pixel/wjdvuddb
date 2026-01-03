@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Ops: Ghost School</title>
+    <!-- 폰트: 나눔 명조(공포), 노토 산스 -->
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* [테마: School Ghost Story - 교사용 통제실] */
+        :root {
+            --bg-deep: #050505;
+            --bg-texture: url('https://www.transparenttextures.com/patterns/dark-matter.png');
+            
+            --panel-bg: rgba(15, 15, 15, 0.95);
+            --border-color: #333;
+            
+            --accent-red: #8a0b0b; /* 핏빛 */
+            --accent-ghost: #546e7a;
+            --accent-paper: #d7ccc8;
+            
+            --text-main: #dcdcdc;
+            --text-muted: #757575;
+            
+            --font-head: 'Nanum Myeongjo', serif;
+            --font-body: 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            background-image: var(--bg-texture);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            margin: 0; padding: 0;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* 스크롤바 커스텀 (어둡게) */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #333; border: 1px solid #444; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-red); }
+
+        /* [로그인 화면: 숙직실의 오래된 장부] */
+        #create-screen {
+            position: fixed; inset: 0; 
+            background: #000 url('https://source.unsplash.com/1600x900/?dark,library,candle') no-repeat center center/cover;
+            z-index: 1000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #create-screen::before {
+            content: ''; position: absolute; inset: 0;
+            background: rgba(0,0,0,0.85);
+            box-shadow: inset 0 0 100px #000;
+        }
+
+        .create-box {
+            position: relative;
+            background: rgba(20, 20, 20, 0.95);
+            padding: 50px 40px; 
+            border: 1px solid #444;
+            border-top: 4px solid var(--accent-red);
+            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+            max-width: 380px; width: 90%;
+            text-align: center;
+        }
+        
+        /* 부적 느낌 장식 */
+        .create-box::after {
+            content: '교사 전용';
+            position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+            background: var(--accent-red); color: #fff;
+            font-family: var(--font-head); font-size: 0.8rem; padding: 2px 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        .create-box h1 {
+            font-family: var(--font-head);
+            font-size: 2.2rem;
+            color: #f0f0f0;
+            margin: 0 0 10px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        input {
+            width: 100%; box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.05);
+            border: none; border-bottom: 1px solid #555;
+            color: #fff;
+            padding: 12px; font-size: 1.1rem;
+            margin: 10px 0;
+            font-family: var(--font-head);
+            text-align: center;
+            transition: 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-bottom-color: var(--accent-red);
+            background: rgba(138, 11, 11, 0.1);
+        }
+        input::placeholder { color: #555; font-family: var(--font-body); }
+
+        .btn-create {
+            width: 100%;
+            background: #222;
+            color: #ccc;
+            padding: 15px;
+            font-size: 1.2rem; border: 1px solid #444; 
+            font-family: var(--font-head);
+            cursor: pointer; margin-top: 25px;
+            transition: 0.3s;
+        }
+        .btn-create:hover {
+            background: var(--accent-red);
+            color: #fff;
+            border-color: var(--accent-red);
+            box-shadow: 0 0 15px rgba(138, 11, 11, 0.4);
+        }
+
+        /* [메인 대시보드 레이아웃] */
+        #dashboard { 
+            display: grid; 
+            grid-template-columns: 1fr 340px; 
+            height: 100vh; 
+        }
+
+        /* 왼쪽: 생존자 현황판 (모니터링 뷰) */
+        .main-view { 
+            padding: 30px; 
+            overflow-y: auto; 
+            background: radial-gradient(circle at center, #111 0%, #000 100%);
+        }
+
+        .header-area { 
+            display: flex; justify-content: space-between; align-items: flex-end; 
+            margin-bottom: 30px; 
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+        }
+
+        .room-badge { 
+            background: #111; 
+            padding: 8px 15px; 
+            border: 1px solid #333; 
+            color: var(--text-muted);
+            font-family: var(--font-head);
+            font-size: 1rem;
+        }
+        #d-roomName { color: var(--accent-red); font-weight: bold; margin-left: 5px; }
+
+        .stage-badge { 
+            font-size: 2.5rem; 
+            color: #ddd; 
+            font-family: var(--font-head); 
+            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        .student-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+            gap: 15px; 
+        }
+
+        /* [학생 카드: 영정/기록 카드 스타일] */
+        .p-card { 
+            background: #151515;
+            border: 1px solid #333;
+            padding: 15px; 
+            position: relative;
+            transition: 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        
+        /* 모서리 장식 */
+        .p-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, #333, transparent);
+        }
+
+        .p-card:hover { transform: translateY(-3px); border-color: #666; }
+        
+        .p-card.danger { 
+            border-color: var(--accent-red); 
+            box-shadow: 0 0 15px rgba(138, 11, 11, 0.2);
+            animation: flickerRed 2s infinite;
+        }
+        @keyframes flickerRed { 0%, 100% { border-color: var(--accent-red); } 50% { border-color: #333; } }
+        
+        .p-card.done { 
+            opacity: 0.5;
+            filter: grayscale(0.8);
+            background: #0a0a0a;
+        }
+        
+        .p-name { 
+            font-size: 1.3rem; margin-bottom: 5px; display: block; 
+            font-family: var(--font-head); color: #e0e0e0;
+            border-bottom: 1px dashed #333; padding-bottom: 5px;
+        }
+        .p-choice { 
+            color: var(--accent-ghost); font-size: 0.9rem; margin-bottom: 12px; display: block; min-height: 1.2em;
+            font-family: var(--font-body);
+        }
+        
+        /* 스탯 게이지 디자인 - 어둡고 탁한 느낌 */
+        .stat-row { 
+            display: flex; align-items: center; margin-top: 6px; font-size: 0.8rem; 
+            color: #666; font-family: var(--font-body);
+        }
+        .stat-icon { width: 35px; margin-right: 5px; opacity: 0.8; }
+        
+        .stat-bar-bg { 
+            flex: 1; height: 4px; background: #222; 
+            position: relative; overflow: hidden; 
+        }
+        .stat-bar-fill { 
+            height: 100%; transition: width 0.5s ease-out; 
+        }
+
+        .hp-fill { background: #8a0b0b; } /* 핏빛 */
+        .stress-fill { background: #546e7a; } /* 영혼색 */
+
+        /* 오른쪽: 통제 패널 (제단) */
+        .control-panel { 
+            background: #0f0f0f; 
+            border-left: 1px solid #333;
+            padding: 25px; 
+            display: flex; flex-direction: column; gap: 15px;
+            box-shadow: -5px 0 30px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+        
+        .panel-title { 
+            font-size: 1.6rem; color: #ccc; text-align: center; margin-bottom: 15px; 
+            font-family: var(--font-head);
+            border-bottom: 1px solid var(--accent-red);
+            padding-bottom: 10px;
+        }
+        
+        .btn { 
+            width: 100%; padding: 15px; font-size: 1rem; 
+            border: 1px solid #444; 
+            background: #1a1a1a;
+            cursor: pointer; 
+            font-family: var(--font-head); color: #bbb; transition: 0.2s; 
+            text-align: left; padding-left: 20px;
+        }
+        
+        .btn:hover { 
+            background: #252525; color: #fff; border-color: #666;
+        }
+        
+        /* 버튼 아이콘 느낌 - 부적 */
+        .btn::after {
+            content: '符'; /* 부적 부 */
+            position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+            opacity: 0.2; font-family: var(--font-head); font-size: 1.2rem;
+        }
+        
+        .btn-next { 
+            background: #222;
+            font-size: 1.3rem; padding: 20px; margin-bottom: 20px; 
+            border: 1px solid #555; border-left: 4px solid var(--accent-red);
+            text-align: center; color: #e0e0e0;
+        }
+        .btn-next::after { content: none; }
+        .btn-next:hover {
+            background: var(--accent-red); color: #fff;
+        }
+
+        .btn-heal { border-left: 3px solid #2e7d32; }
+        .btn-damage { border-left: 3px solid #c62828; }
+        .btn-item { border-left: 3px solid #f57f17; }
+        
+        .btn-reset { 
+            background: #111; margin-top: auto; 
+            text-align: center; color: #555; border: 1px dashed #333; 
+        }
+        .btn-reset:hover { color: var(--accent-red); border-color: var(--accent-red); }
+        .btn-reset::after { content: none; }
+
+        .section-label {
+            color: #555; text-align: center; margin-bottom: 5px; font-size: 0.9rem;
+            font-family: var(--font-head);
+        }
+        
+        /* 반응형 */
+        @media (max-width: 900px) {
+            #dashboard { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+            .control-panel { flex-direction: row; flex-wrap: wrap; border-left: none; border-top: 1px solid #333; padding: 15px; }
+            .btn { width: 48%; margin: 0; padding: 15px; font-size: 0.9rem; }
+            .btn-next { width: 100%; padding: 15px; margin-bottom: 10px; }
+            .btn-reset { width: 100%; margin-top: 10px; }
+            .panel-title { display: none; }
+            .section-label { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="create-screen">
+        <div class="create-box">
+            <h1>학교괴담<br>관리자</h1>
+            <p style="color:var(--text-muted); margin-bottom:30px; font-family:var(--font-head); font-size:0.9rem;">어둠 속에서 지켜보는 눈...</p>
+            <input type="text" id="c-name" placeholder="교실 이름 (예: 2-4)">
+            <input type="password" id="c-pw" placeholder="봉인 암호">
+            <br>
+            <button class="btn-create" onclick="createRoom()">통제 시작</button>
+        </div>
+    </div>
+
+    <div id="dashboard" style="display:none;">
+        <div class="main-view">
+            <div class="header-area">
+                <div class="stage-badge" id="stage-info">대기 중...</div>
+                <div class="room-badge">교실: <span id="d-roomName">-</span></div>
+            </div>
+            
+            <div id="student-grid" class="student-grid">
+                <!-- 학생 카드가 이곳에 생성됩니다 -->
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="panel-title">금지된 공간</div>
+            
+            <button id="btn-next" class="btn btn-next" onclick="nextStage()">다음 상황 전개<br><small style="font-size:0.8rem; opacity:0.7;">(Next Stage)</small></button>
+            
+            <div class="section-label">전체 효과 부여</div>
+            
+            <button class="btn btn-heal" onclick="triggerGlobal('heal', 10)">양호실 처방 (체력 +10)</button>
+            <button class="btn btn-damage" onclick="triggerGlobal('damage', 10)">괴이 습격 (체력 -10)</button>
+            <button class="btn btn-item" onclick="triggerGlobal('stress_down', 20)">안정제 투여 (정신력 회복)</button>
+            
+            <button class="btn btn-reset" onclick="resetGame()">기록 소각 (초기화)</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // [Firebase 로직]
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, update, onValue, remove, child, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+
+        // ★ 선생님의 Firebase 설정값 (이전과 동일하게 넣어주세요)
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_vfxpSBI0p8OuFscII0qGk4xAV_qg6uE", 
+            authDomain: "skull-class-2025.firebaseapp.com",
+            projectId: "skull-class-2025",
+            storageBucket: "skull-class-2025.firebasestorage.app",
+            messagingSenderId: "618203916238",
+            appId: "1:618203916238:web:5da50a4f32a849d167ed9f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+
+        let roomId = null;
+        let currentStageIdx = 0;
+
+        // [방 만들기 및 입장 로직]
+        window.createRoom = async function() {
+            const rName = document.getElementById('c-name').value.trim();
+            const rPw = document.getElementById('c-pw').value.trim();
+            if(!rName || !rPw) return alert("빈칸을 채워주세요.");
+
+            await signInAnonymously(auth);
+            
+            // 기존 방 체크 후 생성
+            update(ref(db, `rooms/${rName}/config`), { password: rPw, createdAt: Date.now() });
+            update(ref(db, `rooms/${rName}/gameState`), { currentStage: 0 }); // 스테이지 0부터
+            
+            enterUI(rName);
+        };
+
+        function enterUI(rName) {
+            roomId = rName;
+            document.getElementById('create-screen').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'grid';
+            document.getElementById('d-roomName').innerText = rName;
+            listenRoom();
+        }
+
+        function listenRoom() {
+            // 스테이지 리스너
+            onValue(ref(db, `rooms/${roomId}/gameState/currentStage`), snap => {
+                currentStageIdx = snap.val() || 0;
+                document.getElementById('stage-info').innerText = `STAGE ${currentStageIdx}`;
+            });
+
+            // 학생 데이터 리스너 (HP, Stress 시각화)
+            onValue(ref(db, `rooms/${roomId}/players`), snap => {
+                const grid = document.getElementById('student-grid');
+                grid.innerHTML = "";
+                
+                snap.forEach(child => {
+                    const p = child.val();
+                    const hp = p.hp !== undefined ? p.hp : 100; // 기본값 100
+                    const stress = p.stress !== undefined ? p.stress : 0;
+                    
+                    const div = document.createElement('div');
+                    // HP가 20 이하면 카드 흔들림 효과
+                    div.className = `p-card ${p.currentChoice ? 'done' : ''} ${hp <= 20 ? 'danger' : ''}`;
+                    
+                    div.innerHTML = `
+                        <span class="p-name">${p.name} ${hp <= 0 ? '💀' : ''}</span>
+                        <span class="p-choice">${p.currentChoice || "대기 중..."}</span>
+                        
+                        <div class="stat-row">
+                            <span class="stat-icon">생명</span>
+                            <div class="stat-bar-bg">
+                                <div class="stat-bar-fill hp-fill" style="width: ${Math.max(0, Math.min(100, hp))}%"></div>
+                            </div>
+                            <span style="margin-left:5px; width:25px; text-align:right;">${hp}</span>
+                        </div>
+
+                        <div class="stat-row">
+                            <span class="stat-icon">정신</span>
+                            <div class="stat-bar-bg">
+                                <div class="stat-bar-fill stress-fill" style="width: ${Math.max(0, Math.min(100, stress))}%"></div>
+                            </div>
+                            <span style="margin-left:5px; width:25px; text-align:right;">${stress}</span>
+                        </div>
+                    `;
+                    grid.appendChild(div);
+                });
+            });
+        }
+
+        // [다음 스테이지]
+        window.nextStage = function() {
+            update(ref(db, `rooms/${roomId}/gameState`), { currentStage: currentStageIdx + 1 });
+            
+            // 학생들 선택 상태 초기화
+            get(ref(db, `rooms/${roomId}/players`)).then(snap => {
+                if(snap.exists()) {
+                    const updates = {};
+                    Object.keys(snap.val()).forEach(key => {
+                        updates[`players/${key}/currentChoice`] = "";
+                    });
+                    update(ref(db, `rooms/${roomId}`), updates);
+                }
+            });
+        };
+
+        // [전체 이벤트 트리거]
+        window.triggerGlobal = function(type, value) {
+            let msg = "";
+            if(type === 'heal') msg = `전체 학생의 체력을 ${value}만큼 회복시킵니다.`;
+            if(type === 'damage') msg = `전체 학생에게 ${value}의 피해를 입힙니다.`;
+            if(type === 'stress_down') msg = `전체 학생의 정신력을 회복시킵니다.`;
+
+            if(!confirm(msg)) return;
+            
+            get(ref(db, `rooms/${roomId}/players`)).then(snap => {
+                if(!snap.exists()) return;
+                
+                const updates = {};
+                snap.forEach(c => {
+                    const p = c.val();
+                    let newHp = p.hp !== undefined ? p.hp : 100;
+                    let newStress = p.stress !== undefined ? p.stress : 0;
+                    
+                    if(type === 'heal') newHp += value;
+                    if(type === 'damage') newHp -= value;
+                    if(type === 'stress_down') newStress -= value;
+                    
+                    updates[`players/${c.key}/hp`] = newHp;
+                    updates[`players/${c.key}/stress`] = Math.max(0, newStress);
+                });
+                
+                update(ref(db, `rooms/${roomId}`), updates);
+            });
+        };
+
+        window.resetGame = function() {
+            if(confirm("이 기록을 영구히 삭제하시겠습니까? (초기화)")) {
+                remove(ref(db, `rooms/${roomId}`));
+                location.reload();
+            }
+        };
+    </script>
+</body>
+</html>
